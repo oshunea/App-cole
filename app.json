@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "SpaceOpti AI",
+    "slug": "spaceopti-ai",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.spaceopti.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "SpaceOpti utilise la caméra pour analyser votre pièce.",
+        "NSPhotoLibraryUsageDescription": "SpaceOpti utilise vos photos pour analyser votre pièce et vos meubles."
+      }
+    },
+    "android": { "package": "com.spaceopti.app" },
+    "plugins": [
+      ["expo-image-picker", { "cameraPermission": "SpaceOpti utilise la caméra pour analyser votre pièce." }]
+    ]
+  }
+}
