@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { insertStock, reorganize, suggestStorage } from './src/engine/layout';
 import type { LayoutResult, OptionKey, Room } from './src/engine/types';
 import { ResultScreen } from './src/screens/ResultScreen';
@@ -22,6 +22,12 @@ const OPTIONS: { key: OptionKey; title: string; sub: string; badge: string }[] =
   { key: 'C', title: 'Meubles gain de place', sub: 'Repère les angles morts et suggère un rangement', badge: 'Premium' },
 ];
 
+/** Alert.alert n'existe pas sur le web. */
+function notify(title: string, message: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
+  else Alert.alert(title, message);
+}
+
 export default function App() {
   const vision = useMemo(createVision, []);
   const [step, setStep] = useState<Step>({ name: 'capture' });
@@ -35,9 +41,13 @@ export default function App() {
 
   async function capture(source: 'camera' | 'library') {
     const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images', 'videos'], videoMaxDuration: 15, quality: 0.8 };
-    const perm = source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert('Autorisation requise', "Autorisez l'accès pour analyser votre pièce.");
-    const res = source === 'camera' ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
+    // Sur le web, le navigateur gère l'accès via un sélecteur de fichier (la caméra mobile est proposée par le système).
+    if (Platform.OS !== 'web') {
+      const perm = source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return notify('Autorisation requise', "Autorisez l'accès pour analyser votre pièce.");
+    }
+    const useCamera = source === 'camera' && Platform.OS !== 'web';
+    const res = useCamera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
     if (res.canceled) return;
     const asset = res.assets[0];
     const video = asset.type === 'video';
@@ -53,7 +63,7 @@ export default function App() {
   }
 
   function fail(e: unknown) {
-    Alert.alert('Oups', e instanceof Error ? e.message : 'Une erreur est survenue.');
+    notify('Oups', e instanceof Error ? e.message : 'Une erreur est survenue.');
   }
 
   async function run(option: OptionKey, current = rights) {
@@ -96,12 +106,14 @@ export default function App() {
         <ScrollView contentContainerStyle={[ui.screen, { justifyContent: 'center' }]}>
           <Text style={ui.title}>SpaceOpti AI</Text>
           <Text style={ui.sub}>Prenez une photo ou filmez 10 à 15 secondes de votre pièce : on vous propose un agencement qui gagne de la place.</Text>
-          <Pressable style={ui.primary} onPress={() => capture('camera')} accessibilityRole="button">
-            <Text style={ui.primaryText}>📷  Scanner ma pièce</Text>
+          <Pressable style={ui.primary} onPress={() => capture(Platform.OS === 'web' ? 'library' : 'camera')} accessibilityRole="button">
+            <Text style={ui.primaryText}>{Platform.OS === 'web' ? '📷  Importer une photo ou vidéo' : '📷  Scanner ma pièce'}</Text>
           </Pressable>
-          <Pressable style={ui.secondary} onPress={() => capture('library')} accessibilityRole="button">
-            <Text style={ui.secondaryText}>Choisir depuis la galerie</Text>
-          </Pressable>
+          {Platform.OS !== 'web' && (
+            <Pressable style={ui.secondary} onPress={() => capture('library')} accessibilityRole="button">
+              <Text style={ui.secondaryText}>Choisir depuis la galerie</Text>
+            </Pressable>
+          )}
         </ScrollView>
       )}
 

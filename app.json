@@ -12,9 +12,24 @@
         "NSPhotoLibraryUsageDescription": "SpaceOpti utilise vos photos pour analyser votre pièce et vos meubles."
       }
     },
-    "android": { "package": "com.spaceopti.app" },
+    "android": {
+      "package": "com.spaceopti.app"
+    },
     "plugins": [
-      ["expo-image-picker", { "cameraPermission": "SpaceOpti utilise la caméra pour analyser votre pièce." }]
-    ]
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "SpaceOpti utilise la caméra pour analyser votre pièce."
+        }
+      ]
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "SpaceOpti AI",
+      "shortName": "SpaceOpti",
+      "backgroundColor": "#F3F4F6",
+      "themeColor": "#0F766E"
+    }
   }
 }

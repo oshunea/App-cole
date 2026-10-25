@@ -7,6 +7,8 @@ Application mobile (Expo / React Native, iOS + Android) d'optimisation d'espace 
 ```bash
 npm install
 npx expo start      # Expo Go ou émulateur
+npm run web         # web app en local
+npm run build:web   # export statique dans dist/ (à héberger tel quel)
 npm test            # moteur d'agencement
 npm run typecheck
 ```
