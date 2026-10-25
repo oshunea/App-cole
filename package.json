@@ -1,33 +1,26 @@
 {
   "name": "spaceopti-ai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test test/*.test.ts",
-    "web": "expo start --web",
-    "build:web": "expo export --platform web"
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
-    "@expo/metro-runtime": "~5.0.5",
-    "@react-native-async-storage/async-storage": "2.1.2",
-    "expo": "~53.0.0",
-    "expo-image-picker": "~16.1.4",
-    "expo-linking": "~7.1.5",
-    "expo-status-bar": "~2.2.3",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-native": "0.79.5",
-    "react-native-svg": "15.11.2",
-    "react-native-web": "~0.20.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "~19.0.10",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "tsx": "^4.19.0",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "vite": "^6.0.0"
   }
 }

@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { OptionKey } from '../engine/types';
 
 const KEY = 'spaceopti.entitlements.v1';
@@ -14,16 +13,22 @@ interface State {
 
 const EMPTY: State = { freeOptionAUsed: false, premiumUntil: 0 };
 
-export async function load(): Promise<State> {
+export function load(): State {
   try {
-    const raw = await AsyncStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY);
     return raw ? { ...EMPTY, ...JSON.parse(raw) } : EMPTY;
   } catch {
     return EMPTY;
   }
 }
 
-const save = (s: State) => AsyncStorage.setItem(KEY, JSON.stringify(s));
+function save(s: State) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    /* navigation privée : on garde l'état en mémoire seulement */
+  }
+}
 
 export const isPremium = (s: State, now = Date.now()) => s.premiumUntil > now;
 
@@ -33,20 +38,20 @@ export function canUse(s: State, option: OptionKey, now = Date.now()): boolean {
   return option === 'A' && !s.freeOptionAUsed;
 }
 
-export async function consume(s: State, option: OptionKey): Promise<State> {
+export function consume(s: State, option: OptionKey): State {
   const next = option === 'A' && !isPremium(s) ? { ...s, freeOptionAUsed: true } : s;
-  await save(next);
+  save(next);
   return next;
 }
 
 /**
- * Point d'intégration achat : brancher RevenueCat / StoreKit / Play Billing ici.
+ * Point d'intégration achat : brancher Stripe Checkout (web) ici, ou Play Billing pour la version Android.
  * Le MVP active simplement la durée correspondante, sans paiement.
  */
-export async function purchase(s: State, plan: Plan, now = Date.now()): Promise<State> {
+export function purchase(s: State, plan: Plan, now = Date.now()): State {
   const base = Math.max(now, s.premiumUntil);
   const next = { ...s, premiumUntil: base + (plan === 'pass48h' ? PASS_48H : MONTH) };
-  await save(next);
+  save(next);
   return next;
 }
 

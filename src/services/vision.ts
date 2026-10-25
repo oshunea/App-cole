@@ -7,11 +7,11 @@ import type { Furniture, Room } from '../engine/types';
  */
 export interface VisionService {
   /** Détecte murs, ouvertures et meubles (détourés) depuis une photo ou une vidéo. */
-  analyzeRoom(mediaUri: string, isVideo: boolean): Promise<Room>;
+  analyzeRoom(media: File, isVideo: boolean): Promise<Room>;
   /** Détoure un meuble stocké ailleurs et estime ses dimensions. */
-  analyzeStockItem(photoUri: string): Promise<Omit<Furniture, 'x' | 'y' | 'rotated' | 'movable'>>;
+  analyzeStockItem(photo: File): Promise<Omit<Furniture, 'x' | 'y' | 'rotated' | 'movable'>>;
   /** Rendu « après » vu sous le même angle ; renvoie l'URI de l'image générée. */
-  renderAfter(mediaUri: string, before: Room, after: Room): Promise<string>;
+  renderAfter(media: File, before: Room, after: Room): Promise<string>;
 }
 
 const DEMO_ROOM: Room = {
@@ -39,44 +39,41 @@ export class DemoVision implements VisionService {
     await delay(400);
     return { id: 'stock-1', label: 'Commode (stock)', w: 90, d: 45, h: 85, storage: 150 };
   }
-  async renderAfter(mediaUri: string): Promise<string> {
+  async renderAfter(media: File): Promise<string> {
     // Pas de moteur de rendu dans le MVP local : on renvoie la photo source.
     await delay(800);
-    return mediaUri;
+    return URL.createObjectURL(media);
   }
 }
 
 export class HttpVision implements VisionService {
   constructor(private baseUrl: string, private token?: string) {}
 
-  private async post<T>(path: string, body: FormData | string, json = false): Promise<T> {
+  private async post<T>(path: string, form: FormData): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: {
-        ...(json ? { 'Content-Type': 'application/json' } : {}),
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-      },
-      body,
+      headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
+      body: form,
     });
     if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
     return res.json() as Promise<T>;
   }
 
-  private media(uri: string, extra: Record<string, string> = {}): FormData {
+  private form(file: File, extra: Record<string, string> = {}): FormData {
     const form = new FormData();
-    form.append('media', { uri, name: 'capture', type: 'application/octet-stream' } as unknown as Blob);
+    form.append('media', file);
     for (const [k, v] of Object.entries(extra)) form.append(k, v);
     return form;
   }
 
-  analyzeRoom(uri: string, isVideo: boolean) {
-    return this.post<Room>('/v1/analyze-room', this.media(uri, { video: String(isVideo) }));
+  analyzeRoom(file: File, isVideo: boolean) {
+    return this.post<Room>('/v1/analyze-room', this.form(file, { video: String(isVideo) }));
   }
-  analyzeStockItem(uri: string) {
-    return this.post<Awaited<ReturnType<VisionService['analyzeStockItem']>>>('/v1/analyze-item', this.media(uri));
+  analyzeStockItem(file: File) {
+    return this.post<Awaited<ReturnType<VisionService['analyzeStockItem']>>>('/v1/analyze-item', this.form(file));
   }
-  async renderAfter(uri: string, before: Room, after: Room) {
-    const r = await this.post<{ url: string }>('/v1/render', this.media(uri, { before: JSON.stringify(before), after: JSON.stringify(after) }));
+  async renderAfter(file: File, before: Room, after: Room) {
+    const r = await this.post<{ url: string }>('/v1/render', this.form(file, { before: JSON.stringify(before), after: JSON.stringify(after) }));
     return r.url;
   }
 }
@@ -84,6 +81,7 @@ export class HttpVision implements VisionService {
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function createVision(): VisionService {
-  const url = process.env.EXPO_PUBLIC_API_URL;
-  return url ? new HttpVision(url, process.env.EXPO_PUBLIC_API_TOKEN) : new DemoVision();
+  const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+  const url = env.VITE_API_URL;
+  return url ? new HttpVision(url, env.VITE_API_TOKEN) : new DemoVision();
 }
